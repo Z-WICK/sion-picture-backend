@@ -13,6 +13,7 @@ import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.exception.ThrowUtils;
 import com.sion.sionpicturebackend.model.dto.picture.*;
+import com.sion.sionpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.sion.sionpicturebackend.model.vo.picture.PictureTagCategory;
 import com.sion.sionpicturebackend.model.vo.picture.PictureVO;
 import com.sion.sionpicturebackend.service.PictureService;
@@ -102,7 +103,7 @@ public class PictureController {
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updatePicture(PictureUpdateRequest pictureUpdateRequest) {
+    public BaseResponse<Boolean> updatePicture(PictureUpdateRequest pictureUpdateRequest, HttpServletRequest request) {
         if (pictureUpdateRequest == null || pictureUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -121,6 +122,10 @@ public class PictureController {
         long id = pictureUpdateRequest.getId();
         Picture oldPicture = pictureService.getById(id);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+
+        //补充审核参数
+        User loginUser = userService.getLoginUser(request);
+        pictureService.fileReviewParams(picture, loginUser);
 
         //操作数据库
         boolean result = pictureService.updateById(picture);
@@ -205,10 +210,14 @@ public class PictureController {
 
         //限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR, "不允许查询过多数据");
+        //普通用户默认只能查看已过审核的数据
+        pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
 
         // 查询数据库
         Page<Picture> picturePage = pictureService.page(new Page<>(current, size),
                 pictureService.getQueryWrapper(pictureQueryRequest));
+
+
 
         // 获取封装类
         return ResultUtils.success(pictureService.getPictureVOPage(picturePage, request));
@@ -240,7 +249,7 @@ public class PictureController {
 
         //数据校验
         pictureService.validPicture(picture);
-        User LoginUser = userService.getLoginUser(request);
+        User loginUser = userService.getLoginUser(request);
 
         //判断是否存在
         long id = pictureEditRequest.getId();
@@ -248,9 +257,11 @@ public class PictureController {
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
 
         //仅本人或管理员可编辑
-        if (!oldPicture.getUserId().equals(LoginUser.getId()) && !userService.isAdmin(LoginUser)) {
+        if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+
+        pictureService.fileReviewParams(picture,loginUser);
         //操作数据库
         boolean result = pictureService.updateById(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);

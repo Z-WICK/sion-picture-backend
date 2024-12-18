@@ -88,6 +88,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setPicFormat(uploadPictureResult.getPicFormat());
         picture.setUserId(loginUser.getId());
 
+        // 补充审核参数
+        fileReviewParams(picture, loginUser);
 
         //如果 pictureId 不为空，则更新图片信息，反之新增
         if (pictureId != null) {
@@ -124,6 +126,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         String sortField = pictureQueryRequest.getSortField();
         String sortOrder = pictureQueryRequest.getSortOrder();
 
+        //审核字段
+        Integer reviewStatus = pictureQueryRequest.getReviewStatus();
+        String reviewMessage = pictureQueryRequest.getReviewMessage();
+        Long reviewerId = pictureQueryRequest.getReviewerId();
+
         // 拼接查询条件
 
         if (StrUtil.isNotBlank(searchText)) {
@@ -144,6 +151,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotEmpty(picHeight), "picHeight", picHeight);
         queryWrapper.eq(ObjUtil.isNotEmpty(picSize), "picSize", picSize);
         queryWrapper.eq(ObjUtil.isNotEmpty(picScale), "picScale", picScale);
+        queryWrapper.eq(ObjUtil.isNotEmpty(reviewStatus), "reviewStatus", reviewStatus);
+        queryWrapper.like(StrUtil.isNotBlank(reviewMessage), "reviewMessage", reviewMessage);
+        queryWrapper.eq(ObjUtil.isNotEmpty(reviewerId), "reviewerId", reviewerId);
 
         //JSON 数组查询
         if (CollUtil.isNotEmpty(tags)) {
@@ -300,13 +310,17 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Override
     public void fileReviewParams(Picture picture, User loginUser){
         if(userService.isAdmin(loginUser)){
-
-
+            //管理员自动通过审核
+            picture.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+            picture.setReviewerId(loginUser.getId());
+            picture.setReviewMessage("管理员自动通过审核");
+            picture.setReviewTime(new Date());
+        }else {
+            //普通用户需要审核
+            picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
         }
 
     }
-
-
 
 }
 
