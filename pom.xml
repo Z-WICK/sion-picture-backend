@@ -62,6 +62,13 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- 腾讯云 cos 服务 -->
+        <dependency>
+            <groupId>com.qcloud</groupId>
+            <artifactId>cos_api</artifactId>
+            <version>5.6.238</version>
+        </dependency>
+
 
     </dependencies>
     <dependencyManagement>
@@ -75,12 +82,12 @@
             </dependency>
 
             <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-bom</artifactId>
-            <version>3.5.9</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-bom</artifactId>
+                <version>3.5.9</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

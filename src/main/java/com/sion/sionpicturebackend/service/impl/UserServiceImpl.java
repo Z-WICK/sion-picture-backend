@@ -74,6 +74,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
 
+    /**
+     *  用户密码加密
+     *
+     * @param userPassword
+     * @return {@link String }
+     */
     @Override
     public String getEncryptPassword(String userPassword) {
         // 盐值，混淆密码
@@ -81,6 +87,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
     }
 
+    /**
+     * 用户登录
+     *
+     * @param userAccount
+     * @param userPassword
+     * @param request
+     * @return {@link LoginUserVO }
+     */
     @Override
     public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         //1.校验
@@ -110,6 +124,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.getLoginUserVO(user);
     }
 
+    /**
+     * 退出登录
+     *
+     * @param request
+     * @return boolean
+     */
     @Override
     public boolean userLogout(HttpServletRequest request) {
 
@@ -123,6 +143,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return true;
     }
 
+    /**
+     * 获取登录用户信息
+     *
+     * @param request
+     * @return {@link User }
+     */
     @Override
     public User getLoginUser(HttpServletRequest request) {
         //先判断是否已登录
@@ -140,6 +166,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return currentUser;
     }
 
+    /**
+     * 获取用户登录信息（脱敏版
+     *
+     * @param user
+     * @return {@link LoginUserVO }
+     */
     @Override
     public LoginUserVO getLoginUserVO(User user) {
         if (user == null) {
@@ -150,6 +182,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return loginUserVO;
     }
 
+    /**
+     * 用户信息脱敏
+     *
+     * @param user
+     * @return {@link UserVO }
+     */
     @Override
     public UserVO getUserVO(User user) {
         if (user == null) {
@@ -160,6 +198,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userVO;
     }
 
+    /**
+     * 用户信息脱敏版本 列表
+     *
+     * @param userList
+     * @return {@link List }<{@link UserVO }>
+     */
     @Override
     public List<UserVO> getUserVOList(List<User> userList) {
         if (CollectionUtil.isEmpty(userList)) {
@@ -168,6 +212,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userList.stream().map(this::getUserVO).collect(Collectors.toList());
     }
 
+    /**
+     *
+     *
+     * @param userQueryRequest
+     * @return {@link QueryWrapper }<{@link User }>
+     */
     @Override
     public QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
         if (userQueryRequest == null) {
@@ -192,6 +242,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return queryWrapper;
 
 
+    }
+
+
+    /**
+     * 是否为管理员
+     *
+     * @param user
+     * @return boolean
+     */
+    @Override
+    public boolean isAdmin(User user) {
+        return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
     }
 }
 

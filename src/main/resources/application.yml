@@ -11,6 +11,12 @@ spring:
     url: jdbc:mysql://localhost:3306/sion_picture
     username: root
     password: wick1234
+  profiles:
+    active: local
+  # 开放更大的文件上传体积
+  servlet:
+    multipart:
+      max-file-size: 10MB
 
 mybatis-plus:
   configuration:

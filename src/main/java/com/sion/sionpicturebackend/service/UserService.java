@@ -68,9 +68,36 @@ public interface UserService extends IService<User> {
     LoginUserVO getLoginUserVO(User user);
 
 
+    /**
+     * 根据用户信息获取用户VO
+     *
+     * @param user
+     * @return {@link UserVO }
+     */
     UserVO getUserVO(User user);
 
+    /**
+     *  根据用户列表获取用户VO列表
+     *
+     * @param userList
+     * @return {@link List }<{@link UserVO }>
+     */
     List<UserVO> getUserVOList(List<User> userList);
 
+    /**
+     *
+     *
+     * @param userQueryRequest
+     * @return {@link QueryWrapper }<{@link User }>
+     */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+
+    /**
+     * 是否为管理员
+     *
+     * @param user
+     * @return boolean
+     */
+    boolean isAdmin(User user);
 }
