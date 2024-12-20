@@ -5,7 +5,7 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sion.sionpicturebackend.domain.User;
+import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.mapper.UserMapper;

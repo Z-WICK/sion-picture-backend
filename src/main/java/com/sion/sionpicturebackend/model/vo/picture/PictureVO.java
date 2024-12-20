@@ -1,7 +1,7 @@
 package com.sion.sionpicturebackend.model.vo.picture;
 
 import cn.hutool.json.JSONUtil;
-import com.sion.sionpicturebackend.domain.Picture;
+import com.sion.sionpicturebackend.model.entity.Picture;
 import com.sion.sionpicturebackend.model.vo.user.UserVO;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;

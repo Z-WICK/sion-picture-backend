@@ -2,7 +2,7 @@ package com.sion.sionpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sion.sionpicturebackend.domain.User;
+import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.model.dto.user.UserQueryRequest;
 import com.sion.sionpicturebackend.model.vo.user.LoginUserVO;
 import com.sion.sionpicturebackend.model.vo.user.UserVO;

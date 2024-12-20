@@ -7,12 +7,12 @@ import com.sion.sionpicturebackend.common.BaseResponse;
 import com.sion.sionpicturebackend.common.DeleteRequest;
 import com.sion.sionpicturebackend.common.ResultUtils;
 import com.sion.sionpicturebackend.constant.UserConstant;
-import com.sion.sionpicturebackend.domain.Picture;
-import com.sion.sionpicturebackend.domain.User;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.exception.ThrowUtils;
 import com.sion.sionpicturebackend.model.dto.picture.*;
+import com.sion.sionpicturebackend.model.entity.Picture;
+import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.sion.sionpicturebackend.model.vo.picture.PictureTagCategory;
 import com.sion.sionpicturebackend.model.vo.picture.PictureVO;
@@ -60,6 +60,18 @@ public class PictureController {
         PictureVO pictureVO = pictureService.uploadPicture(multipartFile, pictureUploadRequest, loginUser);
         return ResultUtils.success(pictureVO);
 
+
+    }
+
+        /**
+     * 通过 URL 上传图片（可重新上传）
+     */
+    @PostMapping("/upload/url")
+    public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody PictureUploadRequest pictureUploadRequest, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        String fileUrl = pictureUploadRequest.getFileUrl();
+        PictureVO pictureVO = pictureService.uploadPicture(fileUrl, pictureUploadRequest, loginUser);
+        return ResultUtils.success(pictureVO);
 
     }
 
@@ -218,7 +230,6 @@ public class PictureController {
                 pictureService.getQueryWrapper(pictureQueryRequest));
 
 
-
         // 获取封装类
         return ResultUtils.success(pictureService.getPictureVOPage(picturePage, request));
 
@@ -260,8 +271,8 @@ public class PictureController {
         if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-
-        pictureService.fileReviewParams(picture,loginUser);
+        // 补充审核参数
+        pictureService.fileReviewParams(picture, loginUser);
         //操作数据库
         boolean result = pictureService.updateById(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -308,4 +319,26 @@ public class PictureController {
 
 
     }
+
+    /**
+     * 批量上传图片
+     *
+     * @param pictureUploadByBatchRequest
+     * @param request
+     * @return {@link BaseResponse }<{@link Integer }>
+     */
+    @PostMapping("/upload/batch")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest,
+                                                      HttpServletRequest request) {
+
+        // 判断pictureUploadByBatchRequest是否为空，如果为空则抛出参数错误异常
+        ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        int uploadCount= pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, loginUser);
+        return ResultUtils.success(uploadCount);
+    }
+        //
+
+
 }

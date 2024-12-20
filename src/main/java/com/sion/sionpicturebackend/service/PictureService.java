@@ -3,13 +3,13 @@ package com.sion.sionpicturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sion.sionpicturebackend.domain.Picture;
-import com.sion.sionpicturebackend.domain.User;
 import com.sion.sionpicturebackend.model.dto.picture.PictureQueryRequest;
 import com.sion.sionpicturebackend.model.dto.picture.PictureReviewRequest;
+import com.sion.sionpicturebackend.model.dto.picture.PictureUploadByBatchRequest;
 import com.sion.sionpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.sion.sionpicturebackend.model.entity.Picture;
+import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.model.vo.picture.PictureVO;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -22,12 +22,12 @@ public interface PictureService extends IService<Picture> {
     /**
      * 上传图片
      *
-     * @param multipartFile
+     * @param inputSource
      * @param pictureUploadRequest
      * @param loginUser
      * @return {@link PictureVO }
      */
-    PictureVO uploadPicture(MultipartFile multipartFile,
+    PictureVO uploadPicture(Object inputSource,
                             PictureUploadRequest pictureUploadRequest,
                             User loginUser
     );
@@ -83,4 +83,17 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser
      */
     void fileReviewParams(Picture picture, User loginUser);
+
+    /**
+     * 批量抓取和创建图片
+     *
+     * @param pictureUploadByBatchRequest
+     * @param loginUser
+     * @return {@link Integer }
+     */
+    Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, User loginUser);
+
+
+
+
 }

@@ -6,7 +6,7 @@ import com.sion.sionpicturebackend.common.BaseResponse;
 import com.sion.sionpicturebackend.common.DeleteRequest;
 import com.sion.sionpicturebackend.common.ResultUtils;
 import com.sion.sionpicturebackend.constant.UserConstant;
-import com.sion.sionpicturebackend.domain.User;
+import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.exception.ThrowUtils;

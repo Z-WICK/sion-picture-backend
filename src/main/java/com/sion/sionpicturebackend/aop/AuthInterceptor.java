@@ -1,7 +1,7 @@
 package com.sion.sionpicturebackend.aop;
 
 import com.sion.sionpicturebackend.annotation.AuthCheck;
-import com.sion.sionpicturebackend.domain.User;
+import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.model.enums.UserRoleEnum;

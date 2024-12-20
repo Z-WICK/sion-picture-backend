@@ -1,4 +1,4 @@
-package com.sion.sionpicturebackend.domain;
+package com.sion.sionpicturebackend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
