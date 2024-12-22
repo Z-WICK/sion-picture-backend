@@ -34,6 +34,12 @@ public class Picture implements Serializable {
     private String name;
 
     /**
+     * 缩略图 url
+     */
+    private String thumbnailUrl;
+
+
+    /**
      * 简介
      */
     private String introduction;
@@ -118,6 +124,11 @@ public class Picture implements Serializable {
      * 是否删除
      */
     private Integer isDelete;
+
+    /**
+     * 空间 id（为空表示公共空间）
+     */
+    private Long spaceId;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
