@@ -3,10 +3,7 @@ package com.sion.sionpicturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sion.sionpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.sion.sionpicturebackend.model.dto.picture.PictureReviewRequest;
-import com.sion.sionpicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.sion.sionpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.sion.sionpicturebackend.model.dto.picture.*;
 import com.sion.sionpicturebackend.model.entity.Picture;
 import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.model.vo.picture.PictureVO;
@@ -101,4 +98,28 @@ public interface PictureService extends IService<Picture> {
      */
     @Async
     void clearPictureFile(Picture oldPicture);
+
+    /**
+     * 删除图片
+     *
+     * @param pictureId
+     * @param loginUser
+     */
+    void deletePicture(long pictureId, User loginUser);
+
+    /**
+     * 更新图片
+     *
+     * @param pictureEditRequest
+     * @param loginUser
+     */
+    void editPicture(PictureEditRequest pictureEditRequest, User loginUser);
+
+    /**
+     * 检查图片权限（谁可以看到）
+     *
+     * @param loginUser
+     * @param picture
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
 }

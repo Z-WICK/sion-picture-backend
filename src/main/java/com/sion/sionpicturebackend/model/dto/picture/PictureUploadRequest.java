@@ -24,4 +24,10 @@ public class PictureUploadRequest implements Serializable {
      * 图片名称
      */
     private String picName;
+
+    /**
+     * 空间 id
+     */
+    private Long spaceId;
+
 }
