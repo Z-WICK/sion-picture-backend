@@ -122,4 +122,11 @@ public interface PictureService extends IService<Picture> {
      * @param picture
      */
     void checkPictureAuth(User loginUser, Picture picture);
+
+
+    /**
+     * 构建缓存key
+     * @return {@link String }
+     */
+    String buildCacheKey(PictureQueryRequest pictureQueryRequest);
 }

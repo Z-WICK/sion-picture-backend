@@ -3,8 +3,8 @@ package com.sion.sionpicturebackend.model.dto.file;
 import lombok.Data;
 
 /**
- * @Author : wick
- * @Date : 2024/12/16 18:16
+ * @author wick
+ * @date 2025/04/21
  */
 @Data
 public class UploadPictureResult {

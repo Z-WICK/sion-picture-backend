@@ -29,7 +29,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -193,7 +192,7 @@ public class PictureController {
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
         // 空间权限校验
         Long spaceId = picture.getSpaceId();
-        if(spaceId!= null){
+        if (spaceId != null) {
             User loginUser = userService.getLoginUser(request);
             pictureService.checkPictureAuth(loginUser, picture);
         }
@@ -247,19 +246,19 @@ public class PictureController {
 
         //空间权限校验
         Long spaceId = pictureQueryRequest.getSpaceId();
-        if(spaceId!= null){
+        if (spaceId == null) {
             //公开图库
             //普通用户默认只能看到审核通过的数据
             pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
             pictureQueryRequest.setNullSpaceId(true);
-        }else {
+        } else {
             //私有空间
             //获取登录用户
             User loginUser = userService.getLoginUser(request);
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
             //校验用户权限
-            if(!loginUser.getId().equals(space.getUserId())){
+            if (!loginUser.getId().equals(space.getUserId())) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该空间");
             }
 
@@ -362,10 +361,8 @@ public class PictureController {
         // 普通用户默认只能查看已经过审的数据
         pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
 
-        //构建缓存key
-        String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
-        String hashKey = DigestUtils.md5DigestAsHex(queryCondition.getBytes());
-        String cacheKey = "sionpicture:listPictureVOByPage:" + hashKey;
+        // 构建缓存key
+        String cacheKey = pictureService.buildCacheKey(pictureQueryRequest);
 
         // 1.先从本地缓存查询
         String cachedValue = LOCAL_CACHE.getIfPresent(cacheKey);
@@ -405,6 +402,41 @@ public class PictureController {
         return ResultUtils.success(pictureVOPage);
 
     }
+
+    // 手动刷新缓存
+    @PostMapping("/admin/cache/refreshPictureList")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<PictureVO>> refreshPictureListCache(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+
+        // 构建缓存key
+        String cacheKey = pictureService.buildCacheKey(pictureQueryRequest);
+
+        // redis 可操作对象
+        ValueOperations<String, String> valueOps = stringRedisTemplate.opsForValue();
+
+        long current = pictureQueryRequest.getCurrent();
+        long size = pictureQueryRequest.getPageSize();
+
+        ThrowUtils.throwIf(size >= 20, ErrorCode.PARAMS_ERROR, "不允许查询大于20条的数据");
+        // 查询数据库
+        Page<Picture> picturePage = pictureService.page(new Page<>(current, size),
+                pictureService.getQueryWrapper(pictureQueryRequest));
+
+        //获取封装类
+        Page<PictureVO> pictureVOPage = pictureService.getPictureVOPage(picturePage, request);
+
+        // 更新缓存
+        //更新Redis缓存
+        String cacheValue = JSONUtil.toJsonStr(pictureVOPage);
+        //5-10分钟随机过期，防止雪崩
+        int cacheExpireTime = 300 + RandomUtil.randomInt(0, 300);
+        valueOps.set(cacheKey, cacheValue, cacheExpireTime, TimeUnit.SECONDS);
+        //写入本地缓存
+        LOCAL_CACHE.put(cacheKey, cacheValue);
+
+        return ResultUtils.success(pictureVOPage);
+    }
+
 
     @GetMapping("/list/level")
     public BaseResponse<List<SpaceLevel>> listSpaceLevel() {

@@ -66,6 +66,7 @@ public class CosManager {
         PicOperations picOperations = new PicOperations();
 
         // 1 表示返回原图信息
+        // 上传这张图片后，请顺带把这张图的元信息也返回给我
         picOperations.setIsPicInfo(1);
         ArrayList<PicOperations.Rule> rules = new ArrayList<>();
 

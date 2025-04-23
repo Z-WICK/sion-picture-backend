@@ -36,6 +36,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -318,6 +319,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
 
+    /**
+     * 分页获取图片封装
+     */
     @Override
     public Page<PictureVO> getPictureVOPage(Page<Picture> picturePage, HttpServletRequest request) {
         // 获取图片列表
@@ -488,7 +492,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 continue;
             }
             // 处理图片的地址，防止转义或者和对象存储冲突的问题
-            // codefather.cn?yupi=dog，应该只保留 codefather.cn
+            // codefather.cn?sion=dog，应该只保留 codefather.cn
             int questionMarkIndex = fileUrl.indexOf("?");
             if (questionMarkIndex > -1) {
                 fileUrl = fileUrl.substring(0, questionMarkIndex);
@@ -498,6 +502,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureUploadRequest.setFileUrl(fileUrl);
             pictureUploadRequest.setPicName(namePrefix + (uploadCount + 1));
             try {
+                // this 当前类中定义的方法
                 PictureVO pictureVO = this.uploadPicture(fileUrl, pictureUploadRequest, loginUser);
                 log.info("图片上传成功，id = {}", pictureVO.getId());
                 uploadCount++;
@@ -553,13 +558,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
             // 释放额度
             Long spaceId = oldPicture.getSpaceId();
-            if(spaceId != null){
+            if (spaceId != null) {
                 boolean update = spaceService.lambdaUpdate()
                         .eq(Space::getId, spaceId)
                         .setSql("totalSize = totalSize - " + oldPicture.getPicSize())
                         .setSql("totalCount = totalCount - 1")
                         .update();
-                ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR,"额度更新失败");
+                ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "额度更新失败");
             }
             // 这个随便返回不重要
             return true;
@@ -610,6 +615,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 }
             }
         }
+    }
+
+    @Override
+    public String buildCacheKey(PictureQueryRequest pictureQueryRequest) {
+        // 构建缓存key
+        String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
+        String hashKey = DigestUtils.md5DigestAsHex(queryCondition.getBytes());
+        String cacheKey = "sionpicture:listPictureVOByPage:" + hashKey;
+
+        return cacheKey;
     }
 
 

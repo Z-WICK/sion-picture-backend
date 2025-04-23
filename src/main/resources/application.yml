@@ -18,7 +18,7 @@ spring:
     port: 6379
     timeout: 5000
   profiles:
-    active: wg
+    active: local
   # 开放更大的文件上传体积
   servlet:
     multipart:

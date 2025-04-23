@@ -113,7 +113,7 @@ public class FileManager {
         // 1.校验文件大小
         long fileSize = multipartFile.getSize();
         final long ONE_M = 1024 * 1024L;
-        ThrowUtils.throwIf(fileSize > ONE_M * 2, ErrorCode.PARAMS_ERROR, "文件大小不能超过2M");
+        ThrowUtils.throwIf(fileSize > ONE_M * 5, ErrorCode.PARAMS_ERROR, "文件大小不能超过5M");
 
         // 2.校验文件类型
         String fileSuffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
