@@ -1,10 +1,7 @@
 package com.sion.sionpicturebackend.controller;
 
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.sion.sionpicturebackend.annotation.AuthCheck;
 import com.sion.sionpicturebackend.common.BaseResponse;
 import com.sion.sionpicturebackend.common.DeleteRequest;
@@ -13,6 +10,8 @@ import com.sion.sionpicturebackend.constant.UserConstant;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.exception.ThrowUtils;
+import com.sion.sionpicturebackend.manager.cache.CacheManager;
+import com.sion.sionpicturebackend.manager.cache.HotKeyTracker;
 import com.sion.sionpicturebackend.model.dto.picture.*;
 import com.sion.sionpicturebackend.model.dto.space.SpaceLevel;
 import com.sion.sionpicturebackend.model.entity.Picture;
@@ -27,8 +26,6 @@ import com.sion.sionpicturebackend.service.SpaceService;
 import com.sion.sionpicturebackend.service.UserService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,7 +33,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -46,23 +42,21 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/picture")
 public class PictureController {
-    //构造本地缓存，设置缓存容量和过期时间
-    private final Cache<String, String> LOCAL_CACHE = Caffeine.newBuilder()
-            .initialCapacity(1024)
-            .maximumSize(10000L)
-            //缓存5分钟
-            .expireAfterWrite(5L, TimeUnit.MINUTES)
-            .build();
+
     @Resource
     private UserService userService;
+
     @Resource
     private PictureService pictureService;
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private HotKeyTracker hotKeyTracker;
 
     @Resource
     private SpaceService spaceService;
+
+    @Autowired
+    private CacheManager cacheManager;
 
     /**
      * 上传图片
@@ -362,23 +356,31 @@ public class PictureController {
         pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
 
         // 构建缓存key
-        String cacheKey = pictureService.buildCacheKey(pictureQueryRequest);
+        String cacheKey = cacheManager.buildCacheKey(pictureQueryRequest);
 
         // 1.先从本地缓存查询
-        String cachedValue = LOCAL_CACHE.getIfPresent(cacheKey);
+        String cachedValue = cacheManager.getLocalCache(cacheKey);
+
+        // 如果缓存命中，返回结果
         if (cachedValue != null) {
-            // 如果缓存命中，返回结果
+            // 记录访问次数，判断是否为热key
+            hotKeyTracker.record(cacheKey);
+
             Page<PictureVO> cachePage = JSONUtil.toBean(cachedValue, Page.class);
             return ResultUtils.success(cachePage);
         }
 
 
         // 2.本地缓存未命中， 查询 Redis分布式缓存
-        ValueOperations<String, String> valueOps = stringRedisTemplate.opsForValue();
-        cachedValue = valueOps.get(cacheKey);
+        cachedValue = cacheManager.getRedisCache(cacheKey);
+        // 如果缓存命中，返回结果
         if (cachedValue != null) {
-            // 如果缓存命中，返回结果
-            LOCAL_CACHE.put(cacheKey, cachedValue);
+            // 记录访问次数，判断是否为热key
+            hotKeyTracker.record(cacheKey);
+
+            // 写入本地缓存中
+            cacheManager.putLocalCache(cacheKey, cachedValue);
+
             Page<PictureVO> cachePage = JSONUtil.toBean(cachedValue, Page.class);
             return ResultUtils.success(cachePage);
         }
@@ -393,11 +395,10 @@ public class PictureController {
         // 4.更新缓存
         //更新Redis缓存
         String cacheValue = JSONUtil.toJsonStr(pictureVOPage);
-        //5-10分钟随机过期，防止雪崩
-        int cacheExpireTime = 300 + RandomUtil.randomInt(0, 300);
-        valueOps.set(cacheKey, cacheValue, cacheExpireTime, TimeUnit.SECONDS);
+        // 写入分布式缓存
+        cacheManager.setRedisCache(cacheKey,cacheValue);
         //写入本地缓存
-        LOCAL_CACHE.put(cacheKey, cacheValue);
+        cacheManager.putLocalCache(cacheKey, cacheValue);
         //返回结果
         return ResultUtils.success(pictureVOPage);
 
@@ -411,8 +412,6 @@ public class PictureController {
         // 构建缓存key
         String cacheKey = pictureService.buildCacheKey(pictureQueryRequest);
 
-        // redis 可操作对象
-        ValueOperations<String, String> valueOps = stringRedisTemplate.opsForValue();
 
         long current = pictureQueryRequest.getCurrent();
         long size = pictureQueryRequest.getPageSize();
@@ -428,11 +427,10 @@ public class PictureController {
         // 更新缓存
         //更新Redis缓存
         String cacheValue = JSONUtil.toJsonStr(pictureVOPage);
-        //5-10分钟随机过期，防止雪崩
-        int cacheExpireTime = 300 + RandomUtil.randomInt(0, 300);
-        valueOps.set(cacheKey, cacheValue, cacheExpireTime, TimeUnit.SECONDS);
+        // 写入分布式缓存
+        cacheManager.setRedisCache(cacheKey,cacheValue);
         //写入本地缓存
-        LOCAL_CACHE.put(cacheKey, cacheValue);
+        cacheManager.putLocalCache(cacheKey, cacheValue);
 
         return ResultUtils.success(pictureVOPage);
     }

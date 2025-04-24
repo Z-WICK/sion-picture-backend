@@ -55,7 +55,7 @@ public class CosManager {
     /**
      * 上传对象（附带图片信息）
      *
-     * @param key  唯一键
+     * @param key  唯一键（上传文件的路径）
      * @param file 文件
      */
 
