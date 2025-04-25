@@ -410,7 +410,7 @@ public class PictureController {
     public BaseResponse<Page<PictureVO>> refreshPictureListCache(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
 
         // 构建缓存key
-        String cacheKey = pictureService.buildCacheKey(pictureQueryRequest);
+        String cacheKey = cacheManager.buildCacheKey(pictureQueryRequest);
 
 
         long current = pictureQueryRequest.getCurrent();

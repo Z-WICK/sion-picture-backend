@@ -36,7 +36,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -615,16 +614,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 }
             }
         }
-    }
-
-    @Override
-    public String buildCacheKey(PictureQueryRequest pictureQueryRequest) {
-        // 构建缓存key
-        String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
-        String hashKey = DigestUtils.md5DigestAsHex(queryCondition.getBytes());
-        String cacheKey = "sionpicture:listPictureVOByPage:" + hashKey;
-
-        return cacheKey;
     }
 
 
