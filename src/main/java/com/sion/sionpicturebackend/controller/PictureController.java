@@ -140,7 +140,8 @@ public class PictureController {
 
         //补充审核参数
         User loginUser = userService.getLoginUser(request);
-        pictureService.fileReviewParams(picture, loginUser);
+        boolean isPublicGallery = pictureUpdateRequest.getSpaceId() == null;
+        pictureService.fileReviewParams(picture, loginUser,isPublicGallery);
 
         //操作数据库
         boolean result = pictureService.updateById(picture);

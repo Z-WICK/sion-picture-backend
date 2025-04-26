@@ -80,7 +80,7 @@ public interface PictureService extends IService<Picture> {
      * @param picture
      * @param loginUser
      */
-    void fileReviewParams(Picture picture, User loginUser);
+    void fileReviewParams(Picture picture, User loginUser, boolean isPublicGallery);
 
     /**
      * 批量抓取和创建图片

@@ -24,6 +24,10 @@ import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.sion.sionpicturebackend.model.vo.picture.PictureVO;
 import com.sion.sionpicturebackend.model.vo.user.UserVO;
+import com.sion.sionpicturebackend.review.PictureReviewExecutor;
+import com.sion.sionpicturebackend.review.PrivateSpaceReviewStrategy;
+import com.sion.sionpicturebackend.review.PublicGalleryReviewStrategy;
+import com.sion.sionpicturebackend.review.ReviewStrategy;
 import com.sion.sionpicturebackend.service.PictureService;
 import com.sion.sionpicturebackend.service.SpaceService;
 import com.sion.sionpicturebackend.service.UserService;
@@ -179,7 +183,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setSpaceId(spaceId);
 
         // 补充审核参数
-        fileReviewParams(picture, loginUser);
+        /*
+        *   当 spaceId 为 null 时，isPublicGallery 变量被设置为 true
+            当 spaceId 不为 null 时，isPublicGallery 变量被设置为 false
+        * */
+        boolean isPublicGallery = spaceId == null;
+        fileReviewParams(picture, loginUser, isPublicGallery);
 
         //如果 pictureId 不为空，则更新图片信息，反之新增
         if (pictureId != null) {
@@ -442,18 +451,18 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
 
     @Override
-    public void fileReviewParams(Picture picture, User loginUser) {
-        if (userService.isAdmin(loginUser)) {
-            //管理员自动通过审核
-            picture.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
-            picture.setReviewerId(loginUser.getId());
-            picture.setReviewMessage("管理员自动通过审核");
-            picture.setReviewTime(new Date());
+    public void fileReviewParams(Picture picture, User loginUser, boolean isPublicGallery) {
+        // 根据上传类型选择审核策略
+        ReviewStrategy reviewStrategy;
+        if (isPublicGallery) {
+            reviewStrategy = new PublicGalleryReviewStrategy();
         } else {
-            //普通用户需要审核
-            picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
+            reviewStrategy = new PrivateSpaceReviewStrategy();
         }
 
+        // 使用策略执行审核
+        PictureReviewExecutor pictureReviewExecutor = new PictureReviewExecutor(reviewStrategy);
+        pictureReviewExecutor.executeReview(picture, loginUser);
     }
 
     @Override
@@ -593,7 +602,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 校验权限
         checkPictureAuth(loginUser, oldPicture);
         // 补充审核参数
-        this.fileReviewParams(picture, loginUser);
+        boolean isPublicGallery = pictureEditRequest.getSpaceId() == null;
+        this.fileReviewParams(picture, loginUser,isPublicGallery);
         // 操作数据库
         boolean result = this.updateById(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
