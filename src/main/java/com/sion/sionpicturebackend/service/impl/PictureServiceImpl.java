@@ -40,6 +40,7 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
@@ -48,6 +49,8 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 /**
@@ -78,6 +81,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    @Resource
+    private ThreadPoolExecutor customExecutor;
 
 
     @Override
@@ -661,13 +667,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                     // 提取图片主色调
                     String hexColor = picture.getPicColor();
                     // 没有主色调的图片放到最后
-                    if(StrUtil.isBlank(hexColor)){
+                    if (StrUtil.isBlank(hexColor)) {
                         return Double.MAX_VALUE;
                     }
                     Color pictureColor = Color.decode(hexColor);
 
                     // 越大越相似
-                    return  -ColorSimilarUtils.calculateSimilarity(targetColor,pictureColor);
+                    return -ColorSimilarUtils.calculateSimilarity(targetColor, pictureColor);
 
                 }))
                 // 取前面12 个
@@ -678,6 +684,149 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         return sortedPictures.stream()
                 .map(PictureVO::objToVo)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 批量修改图片
+     *
+     * @param pictureEditByBatchRequest
+     * @param loginUser
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser) {
+        List<Long> pictureIdList = pictureEditByBatchRequest.getPictureIdList();
+        Long spaceId = pictureEditByBatchRequest.getSpaceId();
+        List<String> tags = pictureEditByBatchRequest.getTags();
+        String category = pictureEditByBatchRequest.getCategory();
+
+
+        // 1. 校验参数
+        ThrowUtils.throwIf(CollUtil.isEmpty(pictureIdList) || spaceId == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
+
+        // 2. 校验空间权限
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        if (!loginUser.getId().equals(space.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无空间访问权限");
+        }
+
+        // 查询指定照片 ， 仅选择需要的字段
+        List<Picture> pictureList = this.lambdaQuery()
+                .select(Picture::getId, Picture::getSpaceId)
+                .eq(Picture::getSpaceId, spaceId)
+                .in(Picture::getId, pictureIdList)
+                .list();
+
+        if (pictureList.isEmpty()) {
+            return;
+        }
+
+        // 4. 更新分类和标签
+        pictureList.forEach(picture -> {
+            if (StrUtil.isNotBlank(category)) {
+                picture.setCategory(category);
+            }
+
+            if (CollUtil.isNotEmpty(tags)) {
+                picture.setTags(JSONUtil.toJsonStr(tags));
+            }
+        });
+
+        // 批量重命名
+        String nameRule = pictureEditByBatchRequest.getNameRule();
+        fillPictureWithNameRule(pictureList, nameRule);
+
+        // 5, 批量更新
+
+        boolean result = this.updateBatchById(pictureList);
+        ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "批量更新失败");
+
+    }
+
+    /**
+     * 批量处理海量图片版
+     *
+     * @param request
+     * @param spaceId
+     * @param loginUserId
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void batchEditPictureMetadata(PictureEditByBatchRequest request, Long spaceId, Long loginUserId) {
+        // 1. 校验参数
+        ThrowUtils.throwIf(request == null || spaceId == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUserId == null, ErrorCode.NO_AUTH_ERROR);
+
+        // 2. 校验空间权限
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        if (!loginUserId.equals(space.getUserId()))
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无空间访问权限");
+
+        // 查询空间下的图片
+        List<Picture> pictureList = this.lambdaQuery()
+                .eq(Picture::getSpaceId, spaceId)
+                .in(Picture::getId, request.getPictureIdList())
+                .list();
+
+        if (pictureList.isEmpty()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在");
+        }
+
+
+        // 分批处理避免事务
+        int batchSize = 100;
+        ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (int i = 0; i < pictureList.size(); i += batchSize) {
+            List<Picture> batch = pictureList.subList(i, Math.min(i + batchSize, pictureList.size()));
+
+            // 异步处理每批数据
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                batch.forEach(picture -> {
+                    // 编辑分类和标签
+                    if (request.getCategory() != null) {
+                        picture.setCategory(request.getCategory());
+                    }
+                    if (request.getTags() != null) {
+                        picture.setTags(String.join(",", request.getTags()));
+                    }
+                });
+                boolean result = this.updateBatchById(batch);
+                if (!result) {
+                    throw new BusinessException(ErrorCode.OPERATION_ERROR, "批量更新图片失败");
+                }
+            }, customExecutor);
+
+            futures.add(future);
+        }
+
+        // 等待所有任务完成
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+    }
+
+    /**
+     * nameRule 格式：图片{序号}
+     *
+     * @param pictureList
+     * @param nameRule
+     */
+    private void fillPictureWithNameRule(List<Picture> pictureList, String nameRule) {
+        if (CollUtil.isEmpty(pictureList) || StrUtil.isBlank(nameRule)) {
+            return;
+        }
+        long count = 1;
+        try {
+            for (Picture picture : pictureList) {
+                String pictureName = nameRule.replaceAll("\\{序号}", String.valueOf(count++));
+                picture.setName(pictureName);
+            }
+        } catch (Exception e) {
+            log.error("名称解析错误", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "名称解析错误");
+        }
     }
 
 
