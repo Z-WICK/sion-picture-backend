@@ -79,7 +79,7 @@ public abstract class PictureUploadTemplate {
                     thumbnailCiObject = objectList.get(1);
                 }
                 // 封装压缩图返回结果并返回
-                return buildResult(originFilename, compressedCiObject, thumbnailCiObject);
+                return buildResult(originFilename, compressedCiObject, thumbnailCiObject,imageInfo);
             }
 
             // 5. 封装返回结果
@@ -116,7 +116,10 @@ public abstract class PictureUploadTemplate {
      * @return {@link UploadPictureResult }
      */
     // 定义一个私有方法buildResult，用于构建上传图片的结果对象
-    private UploadPictureResult buildResult(String originFilename, CIObject compressedCiObject, CIObject thumbnailCiObject) {
+    private UploadPictureResult buildResult(String originFilename,
+                                            CIObject compressedCiObject,
+                                            CIObject thumbnailCiObject,
+                                            ImageInfo imageInfo) {
         // 创建一个UploadPictureResult对象
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         // 获取压缩后的图片宽度
@@ -141,12 +144,20 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + compressedCiObject.getKey());
         // 设置缩略图
         uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + "/" + thumbnailCiObject.getKey());
+        // 设置图片的平均颜色值
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         return uploadPictureResult;
     }
 
 
     /**
      * 封装返回结果
+     *
+     * @param originFilename
+     * @param file
+     * @param uploadPath
+     * @param imageInfo
+     * @return {@link UploadPictureResult }
      */
     private UploadPictureResult buildResult(String originFilename, File file, String uploadPath, ImageInfo imageInfo) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
@@ -160,6 +171,7 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicFormat(imageInfo.getFormat());
         uploadPictureResult.setPicSize(FileUtil.size(file));
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         return uploadPictureResult;
     }
 
