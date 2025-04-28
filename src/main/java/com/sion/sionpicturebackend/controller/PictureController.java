@@ -3,6 +3,8 @@ package com.sion.sionpicturebackend.controller;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sion.sionpicturebackend.annotation.AuthCheck;
+import com.sion.sionpicturebackend.api.imagesearch.model.ImageSearchResult;
+import com.sion.sionpicturebackend.api.imagesearch.ImageSearchApiFacade;
 import com.sion.sionpicturebackend.common.BaseResponse;
 import com.sion.sionpicturebackend.common.DeleteRequest;
 import com.sion.sionpicturebackend.common.ResultUtils;
@@ -467,6 +469,18 @@ public class PictureController {
                         spaceLevelEnum.getMaxSize()))
                 .collect(Collectors.toList());
         return ResultUtils.success(spaceLevelList);
+    }
+
+    @PostMapping("/search/picture")
+    public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest) {
+        ThrowUtils.throwIf(searchPictureByPictureRequest == null, ErrorCode.PARAMS_ERROR);
+        Long pictureId = searchPictureByPictureRequest.getPictureId();
+        ThrowUtils.throwIf(pictureId == null || pictureId <= 0, ErrorCode.PARAMS_ERROR);
+        Picture oldPicture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+        List<ImageSearchResult> imageSearchResultList = ImageSearchApiFacade.searchImage(oldPicture.getUrl());
+        return ResultUtils.success(imageSearchResultList);
+
     }
 
 }
