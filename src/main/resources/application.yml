@@ -47,4 +47,12 @@ knife4j:
         api-rule-resources:
           - com.sion.sionpicturebackend.controller
 
+# 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: xxxxxxxx
+    secretId: xxxxxxxx
+    secretKey: xxxxxxxx
+    region: xxxxxxxx
+    bucket: xxxxxxxx
 

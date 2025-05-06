@@ -1,5 +1,6 @@
 package com.sion.sionpicturebackend.model.dto.picture;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,6 +20,7 @@ public class PictureUploadRequest implements Serializable {
     /**
      * 文件地址
      */
+    @JsonRawValue
     private String fileUrl;
     /**
      * 图片名称

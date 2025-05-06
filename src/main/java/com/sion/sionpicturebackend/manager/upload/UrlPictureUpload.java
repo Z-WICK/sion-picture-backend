@@ -2,23 +2,28 @@ package com.sion.sionpicturebackend.manager.upload;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpStatus;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.http.Method;
+import cn.hutool.http.*;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.exception.ThrowUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
 @Service
+@Slf4j
 public class UrlPictureUpload extends PictureUploadTemplate {
+
+    // 是否为阿里云扩图 - 对象存储
+    boolean isAliOSS;
+
+
     @Override
     protected void validPicture(Object inputSource) {
         String fileUrl = (String) inputSource;
@@ -39,11 +44,21 @@ public class UrlPictureUpload extends PictureUploadTemplate {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "仅支持HTTP或HTTPS协议的文件地址");
             }
 
-            // 发送 HEAD 请求
-            response = HttpUtil.createRequest(Method.HEAD, fileUrl).execute();
+            // todo 策略模式优化
+            // 更精确判断是否为阿里云AI扩图返回链接
+            isAliOSS = fileUrl != null && fileUrl.contains("vigen-invi.oss-cn-shanghai.aliyuncs.com");
+
+            Method method = isAliOSS ? Method.GET : Method.HEAD;
+
+            response = HttpRequest.of(fileUrl, StandardCharsets.UTF_8)
+                    .method(method)
+                    .header("User-Agent", "Mozilla/5.0")
+                    .timeout(3000)
+                    .execute();
 
             // 校验响应状态码
             if (response.getStatus() != HttpStatus.HTTP_OK) {
+                log.error(response.body());
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "文件不存在或无法访问");
             }
 
@@ -59,6 +74,12 @@ public class UrlPictureUpload extends PictureUploadTemplate {
             if (StrUtil.isNotBlank(contentLengthStr)) {
                 long contentLength = Long.parseLong(contentLengthStr);
                 long maxFileSize = 2 * 1024 * 1024L; // 2MB
+                // todo 会员可以保存扩图原图
+
+                // 如果是阿里云AI扩图，则限制两倍大小
+                if (isAliOSS || contentLength > maxFileSize * 2) {
+                    return;
+                }
                 if (contentLength > maxFileSize) {
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小超过限制");
                 }
@@ -76,14 +97,14 @@ public class UrlPictureUpload extends PictureUploadTemplate {
     @Override
     protected String getOriginFilename(Object inputSource) {
         String fileUrl = (String) inputSource;
-        // 从 URL 中提取文件名  
+        // 从 URL 中提取文件名
         return FileUtil.mainName(fileUrl);
     }
 
     @Override
     protected void processFile(Object inputSource, File file) throws Exception {
         String fileUrl = (String) inputSource;
-        // 下载文件到临时目录  
+        // 下载文件到临时目录
         HttpUtil.downloadFile(fileUrl, file);
     }
 }
