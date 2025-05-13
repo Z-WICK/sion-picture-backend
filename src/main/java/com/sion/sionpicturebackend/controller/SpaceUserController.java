@@ -2,6 +2,8 @@ package com.sion.sionpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjUtil;
+import com.sion.sionpicturebackend.auth.annotation.SaSpaceCheckPermission;
+import com.sion.sionpicturebackend.auth.model.SpaceUserPermissionConstant;
 import com.sion.sionpicturebackend.common.BaseResponse;
 import com.sion.sionpicturebackend.common.DeleteRequest;
 import com.sion.sionpicturebackend.common.ResultUtils;
@@ -49,8 +51,9 @@ public class SpaceUserController {
      * @return {@link BaseResponse }<{@link Long }>
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest, HttpServletRequest request){
-        ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorCode.PARAMS_ERROR,"请求参数为空");
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
+    public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorCode.PARAMS_ERROR, "请求参数为空");
         long id = spaceUserService.addSpaceUser(spaceUserAddRequest);
         return ResultUtils.success(id);
 
@@ -64,7 +67,8 @@ public class SpaceUserController {
      * @return {@link BaseResponse }<{@link Boolean }>
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request){
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
+    public BaseResponse<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(
                 deleteRequest == null || deleteRequest.getId() <= 0,
                 ErrorCode.PARAMS_ERROR,
@@ -91,14 +95,15 @@ public class SpaceUserController {
      * @return {@link BaseResponse }<{@link SpaceUser }>
      */
     @PostMapping("/get")
-    public BaseResponse<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest){
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
+    public BaseResponse<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest) {
         // 参数校验
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR, "请求参数为空");
 
         Long spaceId = spaceUserQueryRequest.getSpaceId();
         Long userId = spaceUserQueryRequest.getUserId();
 
-        ThrowUtils.throwIf(ObjUtil.hasEmpty(spaceId,userId), ErrorCode.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(ObjUtil.hasEmpty(spaceId, userId), ErrorCode.NOT_FOUND_ERROR);
 
         // 查询数据库
         SpaceUser spaceUser = spaceUserService.getOne(spaceUserService.getQueryWrapper(spaceUserQueryRequest));
@@ -114,8 +119,10 @@ public class SpaceUserController {
      * @param request
      * @return {@link BaseResponse }<{@link List }<{@link SpaceUserVO }>>
      */
+    @PostMapping("/list")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<List<SpaceUserVO>> listSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest,
-                                                         HttpServletRequest request){
+                                                         HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR, "请求参数为空");
         List<SpaceUser> spaceUserList = spaceUserService.list(
                 spaceUserService.getQueryWrapper(spaceUserQueryRequest));
@@ -133,8 +140,9 @@ public class SpaceUserController {
      * @return {@link BaseResponse }<{@link Boolean }>
      */
     @PostMapping("/edit")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest,
-                                               HttpServletRequest request){
+                                               HttpServletRequest request) {
         if (spaceUserEditRequest == null || spaceUserEditRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -144,7 +152,7 @@ public class SpaceUserController {
         BeanUtil.copyProperties(spaceUserEditRequest, spaceUser);
 
         // 数据校验
-        spaceUserService.validSpaceUser(spaceUser,false);
+        spaceUserService.validSpaceUser(spaceUser, false);
 
         // 判断是否存在
         long id = spaceUserEditRequest.getId();
@@ -165,7 +173,7 @@ public class SpaceUserController {
      * @return {@link BaseResponse }<{@link List }<{@link SpaceUserVO }>>
      */
     @PostMapping("/list/my")
-    public BaseResponse<List<SpaceUserVO>> listMyTeamSpace(HttpServletRequest request){
+    public BaseResponse<List<SpaceUserVO>> listMyTeamSpace(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         SpaceUserQueryRequest spaceUserQueryRequest = new SpaceUserQueryRequest();
         spaceUserQueryRequest.setUserId(loginUser.getId());

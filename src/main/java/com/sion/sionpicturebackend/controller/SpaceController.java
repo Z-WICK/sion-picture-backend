@@ -2,6 +2,7 @@ package com.sion.sionpicturebackend.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sion.sionpicturebackend.annotation.AuthCheck;
+import com.sion.sionpicturebackend.auth.SpaceUserAuthManager;
 import com.sion.sionpicturebackend.common.BaseResponse;
 import com.sion.sionpicturebackend.common.DeleteRequest;
 import com.sion.sionpicturebackend.common.ResultUtils;
@@ -19,11 +20,13 @@ import com.sion.sionpicturebackend.model.vo.space.SpaceVO;
 import com.sion.sionpicturebackend.service.SpaceService;
 import com.sion.sionpicturebackend.service.UserService;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @Author : wick
@@ -37,6 +40,8 @@ public class SpaceController {
 
     @Resource
     private SpaceService spaceService;
+    @Autowired
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     @PostMapping("/add")
     public BaseResponse<Long> addSpace(@RequestBody SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
@@ -121,6 +126,13 @@ public class SpaceController {
         // 查询数据库
         Space space = spaceService.getById(id);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
+
+        SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
+        User loginUser = userService.getLoginUser(request);
+
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        spaceVO.setPermissionList(permissionList);
+
         // 获取封装类
         return ResultUtils.success(spaceService.getSpaceVO(space, request));
     }
