@@ -2,8 +2,8 @@ package com.sion.sionpicturebackend.auth.annotation;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
-import cn.hutool.core.annotation.AliasFor;
 import com.sion.sionpicturebackend.auth.StpKit;
+import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

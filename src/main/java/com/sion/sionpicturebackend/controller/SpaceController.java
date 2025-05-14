@@ -10,12 +10,10 @@ import com.sion.sionpicturebackend.constant.UserConstant;
 import com.sion.sionpicturebackend.exception.BusinessException;
 import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.exception.ThrowUtils;
-import com.sion.sionpicturebackend.model.dto.space.SpaceAddRequest;
-import com.sion.sionpicturebackend.model.dto.space.SpaceEditRequest;
-import com.sion.sionpicturebackend.model.dto.space.SpaceQueryRequest;
-import com.sion.sionpicturebackend.model.dto.space.SpaceUpdateRequest;
+import com.sion.sionpicturebackend.model.dto.space.*;
 import com.sion.sionpicturebackend.model.entity.Space;
 import com.sion.sionpicturebackend.model.entity.User;
+import com.sion.sionpicturebackend.model.enums.SpaceLevelEnum;
 import com.sion.sionpicturebackend.model.vo.space.SpaceVO;
 import com.sion.sionpicturebackend.service.SpaceService;
 import com.sion.sionpicturebackend.service.UserService;
@@ -25,8 +23,10 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author : wick
@@ -205,17 +205,16 @@ public class SpaceController {
      *
      * @return
      */
-//    @GetMapping("/list/level")
-//    public BaseResponse<List<SpaceLevel>> listSpaceLevel() {
-//        List<SpaceLevel> spaceLevelList = Arrays.stream(SpaceLevelEnum.values())
-//                .map(spaceLevelEnum -> new SpaceLevel(
-//                        spaceLevelEnum.getValue(),
-//                        spaceLevelEnum.getText(),
-//                        spaceLevelEnum.getMaxCount(),
-//                        spaceLevelEnum.getMaxSize()
-//                ))
-//                .collect(Collectors.toList());
-//        return ResultUtils.success(spaceLevelList);
-//    }
+    @GetMapping("/list/level")
+    public BaseResponse<List<SpaceLevel>> listSpaceLevel() {
+        List<SpaceLevel> spaceLevelList = Arrays.stream(SpaceLevelEnum.values())
+                .map(spaceLevelEnum -> new SpaceLevel(
+                        spaceLevelEnum.getValue(),
+                        spaceLevelEnum.getText(),
+                        spaceLevelEnum.getMaxCount(),
+                        spaceLevelEnum.getMaxSize()))
+                .collect(Collectors.toList());
+        return ResultUtils.success(spaceLevelList);
+    }
 
 }
