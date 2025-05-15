@@ -134,7 +134,7 @@ public class SpaceController {
         spaceVO.setPermissionList(permissionList);
 
         // 获取封装类
-        return ResultUtils.success(spaceService.getSpaceVO(space, request));
+        return ResultUtils.success(spaceVO);
     }
 
     /**

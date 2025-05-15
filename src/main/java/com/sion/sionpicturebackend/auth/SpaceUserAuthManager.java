@@ -4,6 +4,7 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.sion.sionpicturebackend.auth.model.SpaceUserAuthConfig;
+import com.sion.sionpicturebackend.auth.model.SpaceUserPermissionConstant;
 import com.sion.sionpicturebackend.auth.model.SpaceUserRole;
 import com.sion.sionpicturebackend.model.entity.Space;
 import com.sion.sionpicturebackend.model.entity.SpaceUser;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -52,7 +54,7 @@ public class SpaceUserAuthManager {
 
         // 找到匹配的角色
         SpaceUserRole role = SPACE_USER_AUTH_CONFIG.getRoles().stream()
-                .filter(r -> spaceUserRole.equals(r.getKey()))
+                .filter(r -> r.getKey().equals(spaceUserRole))
                 .findFirst()
                 .orElse(null);
         if (role == null) {
@@ -82,7 +84,7 @@ public class SpaceUserAuthManager {
             if (userService.isAdmin(loginUser)) {
                 return ADMIN_PERMISSIONS;
             }
-            return new ArrayList<>();
+            return Collections.singletonList(SpaceUserPermissionConstant.PICTURE_VIEW);
         }
 
         SpaceTypeEnum spaceTypeEnum = SpaceTypeEnum.getEnumByValue(space.getSpaceType());
