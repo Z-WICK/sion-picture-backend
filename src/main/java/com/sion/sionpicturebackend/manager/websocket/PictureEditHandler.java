@@ -5,20 +5,22 @@ import cn.hutool.json.JSONUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.sion.sionpicturebackend.manager.websocket.disruptor.PictureEditEventProducer;
 import com.sion.sionpicturebackend.manager.websocket.model.PictureEditActionEnum;
 import com.sion.sionpicturebackend.manager.websocket.model.PictureEditMessageTypeEnum;
 import com.sion.sionpicturebackend.manager.websocket.model.PictureEditRequestMessage;
 import com.sion.sionpicturebackend.manager.websocket.model.PictureEditResponseMessage;
 import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.service.UserService;
-import groovyjarjarantlr4.v4.runtime.misc.NotNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -37,15 +39,19 @@ public class PictureEditHandler extends TextWebSocketHandler {
 
     // 保存所有连接的会话，key: pictureId, value: 用户会话集合
     private final Map<Long, Set<WebSocketSession>> pictureSessions = new ConcurrentHashMap<>();
-    private final UserService userService;
 
-    public PictureEditHandler(UserService userService) {
-        this.userService = userService;
-    }
+    @Resource
+    private UserService userService;
+
+    @Resource
+    @Lazy
+    private PictureEditEventProducer pictureEditEventProducer;
+
 
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        super.afterConnectionEstablished(session);
         // 保存会话到集合中
         User user = (User) session.getAttributes().get("user");
         Long pictureId = (Long) session.getAttributes().get("pictureId");
@@ -71,40 +77,14 @@ public class PictureEditHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // 将消息解析为 PictureEditMessage
-        PictureEditRequestMessage pictureEditRequestMessage = JSONUtil.toBean(
-                // 获取消息的负载
-                message.getPayload(),
-                PictureEditRequestMessage.class);
-        String type = pictureEditRequestMessage.getType();
-        PictureEditMessageTypeEnum pictureEditMessageTypeEnum = PictureEditMessageTypeEnum.getEnumByValue(type);
-
-        // 从 Session 属性中获取公共参数
-        Map<String, Object> attributes = session.getAttributes();
-        User user = (User) attributes.get("user");
-        Long pictureId = (Long) attributes.get("pictureId");
-        // 根据消息类型进行处理
-        switch (pictureEditMessageTypeEnum) {
-            case ENTER_EDIT:
-                handleEnterEditMessage(pictureEditRequestMessage, session, user, pictureId);
-                break;
-            case EDIT_ACTION:
-                handleEditActionMessage(pictureEditRequestMessage, session, user, pictureId);
-                break;
-
-            case EXIT_EDIT:
-                handleExitEditMessage(pictureEditRequestMessage, session, user, pictureId);
-                break;
-
-            default:
-                PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
-                pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.ERROR.getValue());
-                pictureEditResponseMessage.setMessage("消息类型错误");
-                pictureEditResponseMessage.setUser(userService.getUserVO(user));
-                session.sendMessage(new TextMessage(JSONUtil.toJsonStr(pictureEditResponseMessage)));
-        }
-
-
+       super.handleTextMessage(session, message);
+        // 获取消息内容，将 JSON 转换为 PictureEditRequestMessage
+        PictureEditRequestMessage pictureEditRequestMessage = JSONUtil.toBean(message.getPayload(), PictureEditRequestMessage.class);
+        // 从 Session 属性中获取到公共参数
+        User user = (User) session.getAttributes().get("user");
+        Long pictureId = (Long) session.getAttributes().get("pictureId");
+        // 根据消息类型处理消息（生产消息到 Disruptor 环形队列中）
+        pictureEditEventProducer.publishEvent(pictureEditRequestMessage, session, user, pictureId);
     }
 
 
@@ -116,7 +96,8 @@ public class PictureEditHandler extends TextWebSocketHandler {
      * @throws Exception
      */
     @Override
-    public void afterConnectionClosed(WebSocketSession session, @NotNull CloseStatus status) throws Exception {
+    public void afterConnectionClosed(WebSocketSession session,  CloseStatus status) throws Exception {
+        super.afterConnectionClosed(session, status);
         Map<String, Object> attributes = session.getAttributes();
         Long pictureId = (Long) attributes.get("pictureId");
         User user = (User) attributes.get("user");
@@ -197,7 +178,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
      */
     public void handleEnterEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session, User user, Long pictureId) throws Exception {
         // 没有用户正在编辑该图片，才能进去
-        if (!pictureSessions.containsKey(pictureId)) {
+        if (!pictureEditingUsers.containsKey(pictureId)) {
             // 设置当前用户为编辑用户
             pictureEditingUsers.put(pictureId, user.getId());
             PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
