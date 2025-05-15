@@ -212,7 +212,7 @@ public class StpInterfaceImpl implements StpInterface {
                     authRequest.setPictureId(id);
                     break;
                 case "spaceUser":
-                    authRequest.setSpaceId(id);
+                    authRequest.setSpaceUserId(id);
                     break;
                 case "space":
                     authRequest.setSpaceId(id);
