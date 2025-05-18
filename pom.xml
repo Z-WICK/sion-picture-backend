@@ -154,6 +154,8 @@
         </dependency>
 
 
+
+
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -193,7 +195,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.sion.sionpicturebackend.SionPictureBackendApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

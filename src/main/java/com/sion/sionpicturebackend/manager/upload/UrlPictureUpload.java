@@ -46,7 +46,7 @@ public class UrlPictureUpload extends PictureUploadTemplate {
 
             // todo 策略模式优化
             // 更精确判断是否为阿里云AI扩图返回链接
-            isAliOSS = fileUrl != null && fileUrl.contains("vigen-invi.oss-cn-shanghai.aliyuncs.com");
+            isAliOSS = fileUrl.contains("vigen-invi");
 
             Method method = isAliOSS ? Method.GET : Method.HEAD;
 
