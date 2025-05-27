@@ -119,4 +119,4 @@ create table if not exists space_user
 ) comment '空间用户关联' collate = utf8mb4_unicode_ci;
 
 ALTER TABLE picture
-    ADD COLUMN cosTunnel varchar(16) null comment '图片存储通道';
+    ADD COLUMN cosTunnel int null comment '图片存储通道';
