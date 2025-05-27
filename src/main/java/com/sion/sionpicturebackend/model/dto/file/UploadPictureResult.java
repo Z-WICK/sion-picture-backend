@@ -55,6 +55,11 @@ public class UploadPictureResult {
      */
     private String picColor;
 
+    /**
+     * 图片上传通道
+     */
+    private int cosTunnel;
+
 
 }
 

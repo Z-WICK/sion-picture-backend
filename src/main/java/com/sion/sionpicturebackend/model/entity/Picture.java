@@ -135,6 +135,11 @@ public class Picture implements Serializable {
     */
     private String picColor;
 
+    /**
+    * 图片上传通道
+    */
+    private int cosTunnel;
+
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

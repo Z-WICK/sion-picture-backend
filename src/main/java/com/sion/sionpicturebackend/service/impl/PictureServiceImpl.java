@@ -194,6 +194,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setPicColor(uploadPictureResult.getPicColor());
         // 补充设置 spaceId
         picture.setSpaceId(spaceId);
+        picture.setCosTunnel(uploadPictureResult.getCosTunnel());
 
         // 补充审核参数
         /*

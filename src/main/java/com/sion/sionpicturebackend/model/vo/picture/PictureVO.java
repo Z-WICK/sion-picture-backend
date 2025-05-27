@@ -96,6 +96,11 @@ public class PictureVO implements Serializable {
     private String picColor;
 
     /**
+    * 图片上传通道
+    */
+    private String cosTunnel;
+
+    /**
      * 权限列表
      */
     private List<String> permissionList = new ArrayList<>();

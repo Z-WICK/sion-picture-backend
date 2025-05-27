@@ -34,6 +34,12 @@ public class R2CosManager {
      * @param file 文件
      */
     public PutObjectResponse putObjectR2(String key, File file) {
+
+        // 特殊处理，兼容腾讯云接口
+        if (key != null && !key.isEmpty() && key.charAt(0) == '/') {
+            key = key.substring(1);
+        }
+
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(r2ClientConfig.getBucketName())
                 .key(key)
@@ -60,8 +66,8 @@ public class R2CosManager {
     /**
      * 上传对象（附带元数据）r2
      *
-     * @param key  唯一键（上传文件的路径）
-     * @param file 文件
+     * @param key      唯一键（上传文件的路径）
+     * @param file     文件
      * @param metadata 元数据
      */
     public PutObjectResponse putObjectWithMetadataR2(String key, File file, Map<String, String> metadata) {
@@ -149,11 +155,10 @@ public class R2CosManager {
     }
 
 
-
     /**
      * 复制对象r2
      *
-     * @param sourceKey 源对象键
+     * @param sourceKey      源对象键
      * @param destinationKey 目标对象键
      * @return 复制结果
      */
@@ -173,8 +178,8 @@ public class R2CosManager {
     /**
      * 上传字符串内容r2
      *
-     * @param key 唯一键
-     * @param content 字符串内容
+     * @param key         唯一键
+     * @param content     字符串内容
      * @param contentType 内容类型
      * @return 上传结果
      */

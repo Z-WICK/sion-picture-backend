@@ -37,5 +37,10 @@ public class PictureUploadRequest implements Serializable {
      */
     private String picColor;
 
+    /**
+    * 图片上传通道
+    */
+    private String cosTunnel;
+
 
 }
