@@ -12,6 +12,7 @@ import com.sion.sionpicturebackend.exception.ErrorCode;
 import com.sion.sionpicturebackend.manager.CosManager;
 import com.sion.sionpicturebackend.manager.R2CosManager;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -36,6 +37,9 @@ public class FileController {
 
     @Resource
     private R2CosManager r2CosManager;
+
+    @Value("${r2.client.public-domain}")
+    private String publicDomain;
 
 
     /**
@@ -91,7 +95,7 @@ public class FileController {
     public BaseResponse<String> testUploadFileR2(@RequestPart("file") MultipartFile multipartFile) {
         //文件目录
         String filename = multipartFile.getOriginalFilename();
-        String filepath = String.format("test/%s", filename);
+        String filepath = String.format("%s/test/%s", publicDomain,filename);
         File file = null;
 
         try {
