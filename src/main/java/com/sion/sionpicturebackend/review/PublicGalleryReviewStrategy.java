@@ -4,6 +4,7 @@ import com.sion.sionpicturebackend.model.entity.Picture;
 import com.sion.sionpicturebackend.model.entity.User;
 import com.sion.sionpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.sion.sionpicturebackend.model.enums.UserRoleEnum;
+import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.Objects;
@@ -12,6 +13,7 @@ import java.util.Objects;
  * @Author : wick
  * @Date : 2025/4/25 22:27
  */
+@Component
 public class PublicGalleryReviewStrategy implements ReviewStrategy{
 
     @Override
